@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include "physicallayer.c"
+#include "physicallayer.h"
 #include "linkfunctions.h"
 
 #define PACKET_SIZE 100
@@ -25,7 +25,7 @@ int checkCommands(char *buffer){
 
 int sendCommand(char *buffer){
 	if(checkCommands(buffer) == 1){
-		dataLinkSend(buffer);
+	  dataLinkSend(buffer, strlen(buffer));
 	} else {
 		printf("not a valid command please try again.\n");
 	}
