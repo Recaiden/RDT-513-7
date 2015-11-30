@@ -38,10 +38,10 @@ int statDupRcvd = 0;
 int statDataVolume = 0;
 int statTimeToClassifyAvg = 0;
 
-int launchPacket(char* packet, int* frame)
+int launchPacket(char* packet, int* frame, int size)
 {
   printf("Send frame to physical\n");
-  physicalSend(packet);
+  physicalSend(packet, size);
   pthread_t timer_thread;
   
   if(pthread_create(&timer_thread, NULL, (void *)send_timer, frame))
@@ -151,7 +151,7 @@ int fromPhysRecv(char* buffer)
       inboundFrameCurrent = frameNumRcvd;
       // ACK!
       constructAck(buffer, inboundFrameCurrent);
-      physicalSend(buffer);
+      physicalSend(buffer, IDX_END);
 
       // Store the packet for the app-layer to retrieve
       strcpy(upboundQUEUE[upQCurrent], buffer+IDX_MESSAGE);
@@ -163,7 +163,7 @@ int fromPhysRecv(char* buffer)
     {
       // Ack that packet, whatever it was.
       constructAck(buffer, frameNumRcvd);
-      physicalSend(buffer);
+      physicalSend(buffer, IDX_END);
       // Put it in the queue, getting them out in order is DataLinkRecv's problem
       strcpy(inboundQUEUE[inboundQMarker], buffer);
       inboundQMarker = (inboundQMarker + 1) % MAX_QUEUE;
@@ -220,7 +220,7 @@ int constructAck(char* buffer, int frame) //in this buffer
 int reACKnowledge(char* buffer)
 {
   constructAck(buffer, outboundFrameCurrent);
-  physicalSend(buffer);
+  physicalSend(buffer, IDX_END);
   return 0;
 }
 
@@ -268,13 +268,14 @@ int send_timer(int* target)
 	  int sizeRcvd = atoi(outboundQUEUE[i]+IDX_SIZE);
 	  statDataVolume += sizeRcvd;
 	  
-	  launchPacket(outboundQUEUE[i], &frame);
+	  launchPacket(outboundQUEUE[i], &frame, sizeRcvd);
 	}
       }
       }
       else
       {
-	launchPacket(outboundQUEUE[present-1], &frame);
+	int sizeRcvd = atoi(outboundQUEUE[present-1]+IDX_SIZE);
+	launchPacket(outboundQUEUE[present-1], &frame, sizeRcvd);
       }
       return 1;
     }
@@ -295,6 +296,7 @@ int dataLinkSend(char *buffer, int n)
   int target;
   //if(!connected)
   //connectToServer();
+  //printf("GOT FROM APP: %s\n", buffer);
   
   if(outQueueCount < MAX_QUEUE)
   {
@@ -309,7 +311,7 @@ int dataLinkSend(char *buffer, int n)
     strncpy(outboundQUEUE[outQueueCount]+IDX_MESSAGE, buffer, n);
     sprintf(outboundQUEUE[outQueueCount]+IDX_NUM, "%d", outboundFrameCurrent);
       //strcpy(outboundQUEUE[outQueueCount]+IDX_NUM, itoa(outboundFrameCurrent));
-    unsigned crc = crc8(0, outboundQUEUE[outQueueCount], n+32+32+1);
+    unsigned crc = crc8(0, outboundQUEUE[outQueueCount], IDX_CRC);
     printf("Adding CRC of %u\n", crc);
     sprintf(outboundQUEUE[outQueueCount]+IDX_CRC, "%d", crc);
     //outboundQUEUE[outQueueCount][IDX_CRC] = crc + '0';
@@ -317,7 +319,13 @@ int dataLinkSend(char *buffer, int n)
     outboundNUMS[outQueueCurrent] = outboundFrameCurrent;
     target = outboundFrameCurrent;
 
-    launchPacket(outboundQUEUE[outQueueCurrent], &target);
+    printf("SIZE   : %s\n", outboundQUEUE[outQueueCurrent]+IDX_SIZE);
+    printf("NUM    : %s\n", outboundQUEUE[outQueueCurrent]+IDX_NUM);
+    printf("TYPE   : %s\n", outboundQUEUE[outQueueCurrent]+IDX_TYPE);
+    printf("MESG   : %s\n", outboundQUEUE[outQueueCurrent]+IDX_MESSAGE);
+    printf("CRC    : %s\n", outboundQUEUE[outQueueCurrent]+IDX_CRC);
+    printf("\n");
+    launchPacket(outboundQUEUE[outQueueCurrent], &target, n);
     
     /*physicalSend(outboundQUEUE[outQueueCurrent]);
     pthread_t timer_thread;

@@ -22,7 +22,7 @@ int initClient();
 int handleMessage(char *buffer);
 void * waitForResponse(void *socket);
 void shuffle(int *array, size_t n);
-void physicalSend(char *buffer);
+void physicalSend(char *buffer, int size);
 void setRates(int drop, int corr);
 
 

@@ -68,23 +68,43 @@ void * waitForResponseServer(void *socket)
   int n;
   //int * socket_fd = (int *)socket;
   int socket_fd = *(int*)socket;
-  char chat_buffer[FRAME_SIZE];
+  char buffer[FRAME_SIZE];
+  char bufferNum[FRAME_SIZE];
+  char bufferType[FRAME_SIZE];
+  char bufferMessage[FRAME_SIZE];
+  char bufferCrc[FRAME_SIZE];
   while(1)
   {
     //read server response
     //bzero(chat_buffer, FRAME_SIZE);
-    memset(chat_buffer, 0, FRAME_SIZE);
+    memset(buffer, 0, FRAME_SIZE);
 
-    n = read((socket_fd), chat_buffer, FRAME_SIZE);
-    printf("RECEIVED from %d %s\n", socket_fd, chat_buffer);
+    n = read((socket_fd), buffer, FRAME_SIZE);
+    printf("RECEIVED from %d \n", socket_fd);
     if(n < 0)
     {
       sleep(1); //sleep some time while waiting for a message
     }
     else
     {
-      printf("n: %d, socket message Recieved\n", n);
-      handleMessage(chat_buffer);
+      /*      n = read((socket_fd), bufferNum, FRAME_SIZE);
+      n = read((socket_fd), bufferType, FRAME_SIZE);
+      n = read((socket_fd), bufferMessage, FRAME_SIZE);
+      n = read((socket_fd), bufferCrc, FRAME_SIZE);*/
+
+      printf("n: %d, socket message RECEIVED\n", n);
+      
+      printf("SIZE   : %s\n", buffer+IDX_SIZE);
+      printf("NUM    : %s\n", buffer+IDX_NUM);
+      printf("TYPE   : %s\n", buffer+IDX_TYPE);
+      printf("MESG   : %s\n", buffer+IDX_MESSAGE);
+      printf("CRC    : %s\n", buffer+IDX_CRC);
+      printf("\n");
+      
+      
+      handleMessage(buffer);
+
+      //TODO recompile into one buffer
     }
   }
 }
@@ -342,7 +362,7 @@ The function takes in a char * and determines if it will send the data
 and whether it will be corrupted before sent. This message if sent will
 then be recieved by the server or clients wairForResponse thread.
 */
-void physicalSend(char *buffer)
+void physicalSend(char *buffer, int size)
 {
   int n; 
   int drop = (rand() % 100)+1;
@@ -354,14 +374,21 @@ void physicalSend(char *buffer)
       shuffle(buffer, strlen(buffer));
        printf("Corrupted packet.\n");
     }
+    printf("SIZE   : %s\n", buffer+IDX_SIZE);
+    printf("NUM    : %s\n", buffer+IDX_NUM);
+    printf("TYPE   : %s\n", buffer+IDX_TYPE);
+    printf("MESG   : %s\n", buffer+IDX_MESSAGE);
+    printf("CRC    : %s\n", buffer+IDX_CRC);
+    printf("\n");
+    
     if(communicator == SERVER){
-      n = write(client_id, buffer, strlen(buffer));
+      n = write(client_id, buffer, FRAME_SIZE);
       printf("Server ");
     } else if (communicator == CLIENT){
-      n = write(server_id, buffer, strlen(buffer));
+      n = write(server_id, buffer, FRAME_SIZE);
       printf("Client ");
     }
-     printf("socket write sent\n");
+    printf("socket write sent %d\n", n);
   }
   else
     {
