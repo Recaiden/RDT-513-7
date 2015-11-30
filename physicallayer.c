@@ -69,10 +69,6 @@ void * waitForResponseServer(void *socket)
   //int * socket_fd = (int *)socket;
   int socket_fd = *(int*)socket;
   char buffer[FRAME_SIZE];
-  char bufferNum[FRAME_SIZE];
-  char bufferType[FRAME_SIZE];
-  char bufferMessage[FRAME_SIZE];
-  char bufferCrc[FRAME_SIZE];
   while(1)
   {
     //read server response
@@ -101,10 +97,7 @@ void * waitForResponseServer(void *socket)
       printf("CRC    : %s\n", buffer+IDX_CRC);
       printf("\n");
       
-      
       handleMessage(buffer);
-
-      //TODO recompile into one buffer
     }
   }
 }
@@ -374,12 +367,12 @@ void physicalSend(char *buffer, int size)
       shuffle(buffer, strlen(buffer));
        printf("Corrupted packet.\n");
     }
-    printf("SIZE   : %s\n", buffer+IDX_SIZE);
+    /*printf("SIZE   : %s\n", buffer+IDX_SIZE);
     printf("NUM    : %s\n", buffer+IDX_NUM);
     printf("TYPE   : %s\n", buffer+IDX_TYPE);
     printf("MESG   : %s\n", buffer+IDX_MESSAGE);
     printf("CRC    : %s\n", buffer+IDX_CRC);
-    printf("\n");
+    printf("\n");*/
     
     if(communicator == SERVER){
       n = write(client_id, buffer, FRAME_SIZE);

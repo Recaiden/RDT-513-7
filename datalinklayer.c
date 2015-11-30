@@ -140,8 +140,8 @@ int fromPhysRecv(char* buffer)
     char buffer_ack[FRAME_SIZE];
     if(checksumCheck(buffer, sizeRcvd) != 0)
       {
-	reACKnowledge(buffer_ack);
 	perror("Checksum doesn't match, packet corrupt.\n");
+	reACKnowledge(buffer_ack);
 	return ERR_CORRUPT;
       }
     
@@ -210,7 +210,7 @@ int constructAck(char* buffer, int frame) //in this buffer
   buffer[IDX_TYPE] = TYPE_ACK + '0';
   sprintf(buffer+IDX_NUM, "%d", frame);
     //strcpy(buffer+IDX_NUM, itoa(frame));
-  unsigned crc = crc8(0, buffer, FRAME_SIZE-1);
+  unsigned crc = crc8(0, buffer, IDX_CRC-1);
   printf("Adding CRC of %u\n", crc);
   sprintf(buffer+IDX_CRC, "%d", crc);
   //buffer[IDX_CRC] = crc + '0';
@@ -311,7 +311,7 @@ int dataLinkSend(char *buffer, int n)
     strncpy(outboundQUEUE[outQueueCount]+IDX_MESSAGE, buffer, n);
     sprintf(outboundQUEUE[outQueueCount]+IDX_NUM, "%d", outboundFrameCurrent);
       //strcpy(outboundQUEUE[outQueueCount]+IDX_NUM, itoa(outboundFrameCurrent));
-    unsigned crc = crc8(0, outboundQUEUE[outQueueCount], IDX_CRC);
+    unsigned crc = crc8(0, outboundQUEUE[outQueueCount], IDX_CRC-1);
     printf("Adding CRC of %u\n", crc);
     sprintf(outboundQUEUE[outQueueCount]+IDX_CRC, "%d", crc);
     //outboundQUEUE[outQueueCount][IDX_CRC] = crc + '0';
@@ -319,12 +319,19 @@ int dataLinkSend(char *buffer, int n)
     outboundNUMS[outQueueCurrent] = outboundFrameCurrent;
     target = outboundFrameCurrent;
 
-    printf("SIZE   : %s\n", outboundQUEUE[outQueueCurrent]+IDX_SIZE);
+    printf("%s %s %s %s %s\n",
+	   outboundQUEUE[outQueueCurrent]+IDX_SIZE,
+	   outboundQUEUE[outQueueCurrent]+IDX_NUM,
+	   outboundQUEUE[outQueueCurrent]+IDX_TYPE,
+	   outboundQUEUE[outQueueCurrent]+IDX_MESSAGE,
+	   outboundQUEUE[outQueueCurrent]+IDX_CRC);
+
+    /*printf("SIZE   : %s\n", outboundQUEUE[outQueueCurrent]+IDX_SIZE);
     printf("NUM    : %s\n", outboundQUEUE[outQueueCurrent]+IDX_NUM);
     printf("TYPE   : %s\n", outboundQUEUE[outQueueCurrent]+IDX_TYPE);
     printf("MESG   : %s\n", outboundQUEUE[outQueueCurrent]+IDX_MESSAGE);
     printf("CRC    : %s\n", outboundQUEUE[outQueueCurrent]+IDX_CRC);
-    printf("\n");
+    printf("\n");*/
     launchPacket(outboundQUEUE[outQueueCurrent], &target, n);
     
     /*physicalSend(outboundQUEUE[outQueueCurrent]);
