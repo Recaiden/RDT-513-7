@@ -5,12 +5,12 @@ CFLAGS=-c -Wall
 all: server client appclient
 
 server: server.o link.o physical.o
-	$(CC) $(LDFLAGS) server.o link.o physical.o -o appserver.exe
+	$(CC) $(LDFLAGS) appserver.o datalinklayer.o physicallayer.o -o appserver.exe
 
 client: client.o link.o physical.o
-	$(CC) $(LDFLAGS) client.o link.o physical.o -o appclient.exe
+	$(CC) $(LDFLAGS) appclient.o datalinklayer.o physicallayer.o -o appclient.exe
 
-link.o: datalinklayer.c linkfunctions.h
+link.o: datalinklayer.c linkfunctions.h physicallayer.h
 	$(CC) $(CFLAGS) datalinklayer.c
 
 physical.o: physicallayer.c physicallayer.h linkfunctions.h

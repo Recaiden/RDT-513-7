@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 
 #include "linkfunctions.h"
+#include "physicallayer.h"
 
 #define PACKET_SIZE 100
 
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]){
 	setRates(argv[1], argv[2]);
 
 	//begin cleint
-	initSocket();
+	initServer();
 	printf("Server has begun.");
 	char buffer[PACKET_SIZE];
 	while(1){
