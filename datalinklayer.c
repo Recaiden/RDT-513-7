@@ -129,10 +129,12 @@ int fromPhysRecv(char* buffer)
   //Check if it's an ACK
   if(type == TYPE_ACK)
   {
+    printf("message is an ACK\n");
     fromPhysHandleAck(buffer, frameNumRcvd);
   }
   else if(type == TYPE_MESSAGE)
   {
+    printf("message is a message\n");
     char buffer_ack[FRAME_SIZE];
     if(checksumCheck(buffer, sizeRcvd) != 0)
       {
@@ -305,6 +307,8 @@ int dataLinkSend(char *buffer, int n)
     outboundNUMS[outQueueCurrent] = outboundFrameCurrent;
     target = outboundFrameCurrent;
 
+
+    printf("Send frame to physical\n");
     launchPacket(outboundQUEUE[outQueueCurrent], &target);
     
     /*physicalSend(outboundQUEUE[outQueueCurrent]);
