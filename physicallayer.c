@@ -7,6 +7,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include "linkfunctions.h"
 #include "physicallayer.h"
 
@@ -83,8 +85,6 @@ void * waitForResponseServer(void *socket)
     }
     else
     {
-      printf("n: %d, socket message RECEIVED\n", n);
-      
       printf("SIZE   : %s\n", buffer+IDX_SIZE);
       printf("NUM    : %s\n", buffer+IDX_NUM);
       printf("TYPE   : %s\n", buffer+IDX_TYPE);
@@ -132,6 +132,8 @@ int initServer()
     exit(3);
   }
 
+  communicator = SERVER;
+
   
   //  while (1)
   //  {
@@ -141,8 +143,10 @@ int initServer()
     
     /*---accept a connection (creating a data pipe)---*/
     clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &addrlen);
-    printf("%s:%d connected %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), clientfd);
+    printf("%s:%d connected %d\n", (char*)inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), clientfd);
     pthread_t reader_thread;
+
+    client_id = clientfd;
 	    
     if(pthread_create(&reader_thread, NULL, waitForResponseServer, &clientfd))
       {
@@ -162,109 +166,6 @@ int initServer()
     // close(sockfd);
   return 0;
 }
-
-int initServer2()
-{
-  int socket_fd, port_num, client_len;
-  fd_set fd_master_set, read_set;
-  //char buffer[FRAME_SIZE];
-  struct sockaddr_in server_addr, client_addr;
-  int n, i, number_sockets = 0;
-  int client_fd[MAX_SOCKETS];
-
-
-  //init fd to socket type
-  socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  
-  if(socket_fd < 0){
-    perror("Error trying to open socket");
-    exit(1);
-  }
-
-  // Only run once.
-  if(init == 0)
-  {
-    init = 1;
-  
-    //init socket
-    bzero((char *) &server_addr, sizeof(server_addr));  //zero out addr
-    port_num = PORT; // set port number
-  
-    //server_addr will contain address of server
-    server_addr.sin_family = AF_INET; // Needs to be AF_NET
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY); // contains ip address of host 
-    server_addr.sin_port = htons(port_num); //htons converts to network byte order
-  
-    int yes = 1;
-    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) { 
-      perror("setsockopt"); 
-      exit(1); 
-    }  
-  
-    //bind the host address with bind()
-    if(bind(socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0){
-      perror("Error Binding");
-      exit(1);
-    }
-    printf("Server listening for sockets on port:%d\n", port_num);
-    
-    //listen for clients
-    int n = listen(socket_fd, MAX_SOCKETS);
-    printf("Listen result %d\n", n);
-    client_len = sizeof(client_addr); // set client length
-  }
-  
-  FD_ZERO(&fd_master_set);
-  FD_SET(socket_fd, &fd_master_set);
-
-  communicator = SERVER;
-  
-  while(1)
-  {
-    read_set = fd_master_set;
-    n = select(FD_SETSIZE, &read_set, NULL, NULL, NULL);
-    if(n < 0)
-      { perror("Select Failed"); exit(1); }
-    
-    for(i = 0; i < FD_SETSIZE; i++)
-    {
-      if(FD_ISSET(i, &read_set))
-      {
-	if(i == socket_fd)
-	{
-	  if(number_sockets < MAX_CLIENTS)//MAX_SOCKETS)
-	  {
-	    //accept new connection from client
-	    client_fd[number_sockets] = 
-	      accept(socket_fd, (struct sockaddr *)&client_addr, &client_len);
-	    if(client_fd[number_sockets] < 0)
-	      { perror("Error accepting client"); exit(1); }
-	    printf("Client accepted.\n");
-	    FD_SET(client_fd[number_sockets], &fd_master_set);
-	    number_sockets++;
-
-	    client_id = client_fd[number_sockets-1];
-	    printf("i: %d, fd: %d\n",i, client_fd[number_sockets-1]);
-	    
-            pthread_t reader_thread;
-	    
-            if(pthread_create(&reader_thread, NULL, waitForResponse, &socket_fd))
-	    {
-              perror("Error creating reader thread\n");
-              exit(1);
-            }
-	    printf("Started listener.\n");
-	    //break;
-	    return 1;
-    	  }
-	}
-      }
-    }
-  }
-  return 0;
-}
-
-
 
 /**
 initClient: creates a client socket to connect to the server. 
@@ -320,11 +221,12 @@ int initClient(){
   
   pthread_t reader_thread;
   
-  if(pthread_create(&reader_thread, NULL, waitForResponse, &server_id)){
+  if(pthread_create(&reader_thread, NULL, waitForResponseServer, &server_id)){
     fprintf(stderr, "Error creating reader thread\n");
     exit(1);
   }
 
+  sleep(1);
   return 0;
 }
 
@@ -359,8 +261,8 @@ void physicalSend(char *buffer, int size)
   {
     if(corrupt <= corruptRate)
     {
-      shuffle(buffer, strlen(buffer));
-       printf("Corrupted packet.\n");
+      shuffle((int*)buffer, strlen(buffer));
+      printf("Corrupted packet.\n");
     }
     /*printf("SIZE   : %s\n", buffer+IDX_SIZE);
     printf("NUM    : %s\n", buffer+IDX_NUM);
@@ -376,7 +278,7 @@ void physicalSend(char *buffer, int size)
       n = write(server_id, buffer, FRAME_SIZE);
       printf("Client ");
     }
-    printf("socket write sent %d\n", n);
+    printf("socket write sent %d bytes\n", n);
   }
   else
     {

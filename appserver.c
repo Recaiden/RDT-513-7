@@ -24,7 +24,7 @@ int sendCommand(char *buffer){
 
 int receiveCommand(char *buffer){
 	if(strstr(buffer, "/Hello") == buffer){
-	  printf("Got hello.");
+	  printf("Got hello.\n");
 	  //sendCommand(buffer);// change to say hi or something
 	} else if ( strstr(buffer, "/Sendfile") == buffer ){
 
@@ -40,14 +40,14 @@ int receiveCommand(char *buffer){
 
 int main(int argc, char *argv[]){
 	if(argc < 3) {
-		fprintf(stderr, "Please add drop and corrupt rates");
+		fprintf(stderr, "Please add drop and corrupt rates\n");
     	exit(0);
   	}
 	setRates(atoi(argv[1]), atoi(argv[2]));
 
 	//begin cleint
 	initServer();
-	printf("Server has begun.");
+	printf("Server has begun.\n");
 	char buffer[PACKET_SIZE];
 	char testbuffer[PACKET_SIZE];
 	strcpy(testbuffer, "Testdatafromserver.");

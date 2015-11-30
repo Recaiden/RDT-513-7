@@ -122,7 +122,7 @@ int fromPhysRecv(char* buffer)
   //int type = (int)buffer[IDX_TYPE] - '0';
   int type = atoi(buffer+IDX_TYPE);
   int frameNumRcvd = atoi(buffer+IDX_NUM);
-  int sizeRcvd = atoi(buffer+IDX_SIZE);
+  //int sizeRcvd = atoi(buffer+IDX_SIZE);
 
   // If the application isn't reading, don't keep reading.
   while(upQSend == upQCurrent -1)
@@ -161,6 +161,7 @@ int fromPhysRecv(char* buffer)
       strcpy(upboundQUEUE[upQCurrent], buffer+IDX_MESSAGE);
       upQCurrent = (upQCurrent + 1)%MAX_QUEUE;
       upQSend ++;
+      return 0;
     }
     // Ack any appropriate packets individually.
     if(transmissionMode == SELECTIVE_REPEAT)
@@ -255,7 +256,7 @@ int send_timer(int* target)
       printf("frame no longer OUTBOUND.\n");
       return 0;
     }
-    if(msec > 1000)
+    if(msec > 1200)
     {
       printf("WARNING: No ack within timeout window for frame %d\n", frame);
 
@@ -280,6 +281,7 @@ int send_timer(int* target)
 	int sizeRcvd = atoi(outboundQUEUE[present-1]+IDX_SIZE);
 	launchPacket(outboundQUEUE[present-1], &frame, sizeRcvd);
       }
+      sleep(1);
       return 1;
     }
   }
@@ -359,7 +361,7 @@ int checksumCheck(char* buffer, int size)
 {
   unsigned crcRcvd = atoi(buffer + IDX_CRC);
   unsigned crcSent = crc8(0, buffer, size);
-  printf("Comparing %u to %u\n", crcRcvd, crcSent);
+  printf("Comparing %u to %u ", crcRcvd, crcSent);
   return crcRcvd != crcSent;
 }
 
