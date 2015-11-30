@@ -34,7 +34,7 @@ int sendCommand(char *buffer){
 
 
 int main(int argc, char *argv[]){
-	if(argv < 3) {
+	if(argc < 3) {
 		fprintf(stderr, "Please add drop and corrupt rates");
     	exit(0);
   	}
