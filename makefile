@@ -2,20 +2,26 @@ CC=gcc
 LDFLAGS=-pthread
 CFLAGS=-c -Wall
 
-all: server client
+all: server client appclient
 
-server: server.o
-	$(CC) $(LDFLAGS) server.o -o server.exe
+server: server.o link.o physical.o
+	$(CC) $(LDFLAGS) server.o link.o physical.o -o appserver.exe
 
-server.o: server.c
-	$(CC) $(CFLAGS) server.c
+client: client.o link.o physical.o
+	$(CC) $(LDFLAGS) client.o link.o physical.o -o appclient.exe
 
-client: client.o
-	$(CC) $(LDFLAGS) client.o -o client.exe
+link.o: datalinklayer.c linkfunctions.h
+	$(CC) $(CFLAGS) datalinklayer.c
 
-client.o: client.c
-	$(CC) $(CFLAGS) client.c
+physical.o: physicallayer.c physicallayer.h linkfunctions.h
+	$(CC) $(CFLAGS) physicallayer.c
 
+
+server.o: appserver.c
+	$(CC) $(CFLAGS) appserver.c
+
+client.o: appclient.c
+	$(CC) $(CFLAGS) appclient.c
 
 clean:
-	rm *.o server.exe client.exe server client
+	rm *.o appclient.exe appserver.exe appclient appserver
