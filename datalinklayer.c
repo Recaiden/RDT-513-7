@@ -40,6 +40,8 @@ int statTimeToClassifyAvg = 0;
 
 int launchPacket(char* packet, int* frame)
 {
+  printf("Send frame to physical\n");
+  physicalSend(packet);
   pthread_t timer_thread;
   
   if(pthread_create(&timer_thread, NULL, (void *)send_timer, frame))
@@ -243,7 +245,7 @@ int send_timer(int* target)
     {
       //printf("%d\n", outboundNUMS[i]);
       if(outboundNUMS[i] == frame)
-      { present = 1; }
+      { present = i+1; }
     }
     if(!present)
     {
@@ -252,6 +254,10 @@ int send_timer(int* target)
     }
     if(msec > 1000)
     {
+      printf("WARNING: No ack within timeout window for frame %d\n", frame);
+
+      if(transmissionMode == GOBACKN)
+      {
       // Timer expired, resend everything
       for(i = 0; i < MAX_QUEUE; i++)
       {
@@ -262,12 +268,14 @@ int send_timer(int* target)
 	  int sizeRcvd = atoi(outboundQUEUE[i]+IDX_SIZE);
 	  statDataVolume += sizeRcvd;
 	  
-	  //physicalSend(outboundQUEUE[i]);
 	  launchPacket(outboundQUEUE[i], &frame);
 	}
       }
-
-      printf("WARNING: No ack within timeout window for frame %d\n", frame);
+      }
+      else
+      {
+	launchPacket(outboundQUEUE[present-1], &frame);
+      }
       return 1;
     }
   }
@@ -309,8 +317,6 @@ int dataLinkSend(char *buffer, int n)
     outboundNUMS[outQueueCurrent] = outboundFrameCurrent;
     target = outboundFrameCurrent;
 
-
-    printf("Send frame to physical\n");
     launchPacket(outboundQUEUE[outQueueCurrent], &target);
     
     /*physicalSend(outboundQUEUE[outQueueCurrent]);
@@ -327,6 +333,7 @@ int dataLinkSend(char *buffer, int n)
   else
   {
     perror("Too many packets already in flight.  Window full.\n");
+    return 1;
   }
   return 0;
 }
