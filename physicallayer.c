@@ -83,11 +83,6 @@ void * waitForResponseServer(void *socket)
     }
     else
     {
-      /*      n = read((socket_fd), bufferNum, FRAME_SIZE);
-      n = read((socket_fd), bufferType, FRAME_SIZE);
-      n = read((socket_fd), bufferMessage, FRAME_SIZE);
-      n = read((socket_fd), bufferCrc, FRAME_SIZE);*/
-
       printf("n: %d, socket message RECEIVED\n", n);
       
       printf("SIZE   : %s\n", buffer+IDX_SIZE);

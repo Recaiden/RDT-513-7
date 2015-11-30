@@ -119,7 +119,8 @@ int fromPhysHandleAck(char* buffer, int frameNumRcvd)
 
 int fromPhysRecv(char* buffer)
 {
-  int type = (int)buffer[IDX_TYPE] - '0';
+  //int type = (int)buffer[IDX_TYPE] - '0';
+  int type = atoi(buffer+IDX_TYPE);
   int frameNumRcvd = atoi(buffer+IDX_NUM);
   int sizeRcvd = atoi(buffer+IDX_SIZE);
 
@@ -137,7 +138,7 @@ int fromPhysRecv(char* buffer)
   }
   else if(type == TYPE_MESSAGE)
   {
-    printf("message is a message\n");
+    //printf("message is a message\n");
     char buffer_ack[FRAME_SIZE];
     if(checksumCheck(buffer, IDX_CRC-1) != 0)
     {
@@ -206,17 +207,16 @@ int fromPhysRecv(char* buffer)
 int constructAck(char* buffer, int frame) //in this buffer
 {
   statAckSent++;
+
+  printf("ACKnowledging frame #%d\n", frame);
   
   memset(buffer, 0, IDX_END);
   sprintf(buffer+IDX_SIZE, "%d", 0); 
-  //buffer[IDX_SIZE] = '0';
-  buffer[IDX_TYPE] = TYPE_ACK + '0';
+  sprintf(buffer+IDX_TYPE, "%d", TYPE_ACK);
   sprintf(buffer+IDX_NUM, "%d", frame);
-    //strcpy(buffer+IDX_NUM, itoa(frame));
   unsigned crc = crc8(0, buffer, IDX_CRC-1);
   //printf("Adding CRC of %u\n", crc);
   sprintf(buffer+IDX_CRC, "%d", crc);
-  //buffer[IDX_CRC] = crc + '0';
   return 0;
 }
 
@@ -309,15 +309,12 @@ int dataLinkSend(char *buffer, int n)
     // Write the message into the Outgoing Q
     memset(outboundQUEUE[outQueueCount], 0, IDX_END);
     sprintf(outboundQUEUE[outQueueCount]+IDX_SIZE, "%d", n);
-    //outboundQUEUE[outQueueCount][IDX_SIZE] = '1';
-    outboundQUEUE[outQueueCount][IDX_TYPE] = TYPE_MESSAGE + '0';
+    sprintf(outboundQUEUE[outQueueCount]+IDX_TYPE, "%d", TYPE_MESSAGE);
     strncpy(outboundQUEUE[outQueueCount]+IDX_MESSAGE, buffer, n);
     sprintf(outboundQUEUE[outQueueCount]+IDX_NUM, "%d", outboundFrameCurrent);
-      //strcpy(outboundQUEUE[outQueueCount]+IDX_NUM, itoa(outboundFrameCurrent));
     unsigned crc = crc8(0, outboundQUEUE[outQueueCount], IDX_CRC-1);
     //printf("Adding CRC of %u\n", crc);
     sprintf(outboundQUEUE[outQueueCount]+IDX_CRC, "%d", crc);
-    //outboundQUEUE[outQueueCount][IDX_CRC] = crc + '0';
     
     outboundNUMS[outQueueCurrent] = outboundFrameCurrent;
     target = outboundFrameCurrent;
