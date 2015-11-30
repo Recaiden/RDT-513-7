@@ -159,7 +159,7 @@ initClient: creates a client socket to connect to the server.
 Starts a thread that will check for incomming data from the server.
 */
 int initClient(){
-  int socket_fd, n;
+  int socket_fd;
   //char packaged[FRAME_SIZE];
   //char buffer[FRAME_SIZE];
   
@@ -238,21 +238,21 @@ The function takes in a char * and determines if it will send the data
 and whether it will be corrupted before sent. This message if sent will
 then be recieved by the server or clients wairForResponse thread.
 */
-void physicalSend(char *buffer){
-	int n; 
-	int drop = (rand() % 100)+1;
-	int corrupt = (rand() % 100)+1;
-	if(drop > dropRate){
-		if(corrupt <= corruptRate){
-			shuffle(buffer, strlen(buffer));
-		}
-		if(communicator == SERVER){
-			n = write(4, buffer, strlen(buffer));
-		} else if (communicator == CLIENT){
-			n = write(server_id, buffer, strlen(buffer));
-		}
-	}
-
+void physicalSend(char *buffer)
+{
+  int n; 
+  int drop = (rand() % 100)+1;
+  int corrupt = (rand() % 100)+1;
+  if(drop > dropRate){
+    if(corrupt <= corruptRate){
+      shuffle(buffer, strlen(buffer));
+    }
+    if(communicator == SERVER){
+      n = write(4, buffer, strlen(buffer));
+    } else if (communicator == CLIENT){
+      n = write(server_id, buffer, strlen(buffer));
+    }
+  } 
 }
 
 
