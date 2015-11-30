@@ -18,6 +18,11 @@ int corruptRate = 0;
 int communicator = 0;
 int server_id = 0;
 
+void setRates(int drop, int corr){
+  dropRate = drop;
+  corruptRate = corr;
+}
+
 /**
 handleMessage: sends recieved buffer to the link layer
 */
