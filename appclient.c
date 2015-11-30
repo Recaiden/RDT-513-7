@@ -52,6 +52,7 @@ int main(int argc, char *argv[]){
    			sendCommand(buffer);
    		} else {
    			printf("This command does not exist please try again.\n"); // maybe put in a help command
+					statDump();
    		}
 	}
 	return(1);

@@ -11,6 +11,7 @@
 #include "physicallayer.h"
 
 int init = 0;
+int client_id = 0;
 
 //these rates will be an integer out of 100 will get these from globals in appclient and server
 int dropRate = 0;
@@ -27,38 +28,135 @@ void setRates(int drop, int corr){
 handleMessage: sends recieved buffer to the link layer
 */
 int handleMessage(char *buffer){
-	fromPhysRecv(buffer);
-	return 0;
+  fromPhysRecv(buffer);
+  return 0;
 }
 
 /**
 waitForResponse: threaded function which waits to read data from the server or client.
 The data is then passed to handle message to be sent to the link layer.
 */
-void * waitForResponse(void *socket){
-	int n;
-	int * socket_fd = (int *)socket;
-  	char chat_buffer[FRAME_SIZE];
-  	while(1){
-	    //read server response
-	    bzero(chat_buffer, FRAME_SIZE);
-      printf("%s\n", socket_fd);
-	    n = read((* socket_fd), chat_buffer, FRAME_SIZE);
-	    printf("RECEIVED: %s\n", chat_buffer);
-	    if(n < 0){
-	      sleep(1); //sleep some time while waiting for a message
-	    } else {
-        printf("socket message Recieved\n");
-	    	handleMessage(chat_buffer);
-	    }
-	}
+void * waitForResponse(void *socket)
+{
+  printf("Waiting for response.\n");
+  int n;
+  int * socket_fd = (int *)socket;
+  char chat_buffer[FRAME_SIZE];
+  while(1)
+  {
+    //read server response
+    //bzero(chat_buffer, FRAME_SIZE);
+    memset(chat_buffer, 0, FRAME_SIZE);
+
+    n = read((* socket_fd), chat_buffer, FRAME_SIZE);
+    printf("RECEIVED: %d %s\n", *socket_fd, chat_buffer);
+    if(n < 0)
+    {
+      sleep(1); //sleep some time while waiting for a message
+    }
+    else
+    {
+      printf("n: %d, socket message Recieved\n", n);
+      handleMessage(chat_buffer);
+    }
+  }
+}
+
+void * waitForResponseServer(void *socket)
+{
+  printf("Waiting for response.\n");
+  int n;
+  //int * socket_fd = (int *)socket;
+  int socket_fd = *(int*)socket;
+  char chat_buffer[FRAME_SIZE];
+  while(1)
+  {
+    //read server response
+    //bzero(chat_buffer, FRAME_SIZE);
+    memset(chat_buffer, 0, FRAME_SIZE);
+
+    n = read((socket_fd), chat_buffer, FRAME_SIZE);
+    printf("RECEIVED from %d %s\n", socket_fd, chat_buffer);
+    if(n < 0)
+    {
+      sleep(1); //sleep some time while waiting for a message
+    }
+    else
+    {
+      printf("n: %d, socket message Recieved\n", n);
+      handleMessage(chat_buffer);
+    }
+  }
 }
 
 /**
 initServer: creates a server and waits to accept the first client.
 After accepting a client the server starts a thread to listen for incomming data.
 */
-int initServer(){
+int initServer()
+{
+  int sockfd;
+  
+  struct sockaddr_in self;
+  //char buffer[];
+  
+  if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0 )
+  {
+    perror("Error trying to open socket");
+    exit(2);
+  }
+
+  bzero(&self, sizeof(self));
+  self.sin_family = AF_INET;
+  self.sin_port = htons(PORT);
+  self.sin_addr.s_addr = INADDR_ANY;
+  
+  if ( bind(sockfd, (struct sockaddr*)&self, sizeof(self)) != 0 )
+  {
+    perror("socket--bind");
+    exit(1);
+  }
+
+
+  if ( listen(sockfd, 20) != 0 )
+  {
+    perror("socket--listen");
+    exit(3);
+  }
+
+  
+  //  while (1)
+  //  {
+    int clientfd;
+    struct sockaddr_in client_addr;
+    int addrlen=sizeof(client_addr);
+    
+    /*---accept a connection (creating a data pipe)---*/
+    clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &addrlen);
+    printf("%s:%d connected %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), clientfd);
+    pthread_t reader_thread;
+	    
+    if(pthread_create(&reader_thread, NULL, waitForResponseServer, &clientfd))
+      {
+	perror("Error creating reader thread\n");
+	exit(1);
+      }
+    printf("Started listener.\n");
+    sleep(1);
+    /*---Echo back anything sent---*/
+    //send(clientfd, buffer, recv(clientfd, buffer, MAXBUF, 0), 0);
+    
+    /*---Close data connection---*/
+    //close(clientfd);
+    //}
+  
+  /*---Clean up (should never get here!)---*/
+    // close(sockfd);
+  return 0;
+}
+
+int initServer2()
+{
   int socket_fd, port_num, client_len;
   fd_set fd_master_set, read_set;
   //char buffer[FRAME_SIZE];
@@ -112,45 +210,49 @@ int initServer(){
   FD_SET(socket_fd, &fd_master_set);
 
   communicator = SERVER;
-
   
-  while(1){
-    
+  while(1)
+  {
     read_set = fd_master_set;
     n = select(FD_SETSIZE, &read_set, NULL, NULL, NULL);
     if(n < 0)
-    { perror("Select Failed"); exit(1); }
+      { perror("Select Failed"); exit(1); }
     
     for(i = 0; i < FD_SETSIZE; i++)
     {
       if(FD_ISSET(i, &read_set))
       {
-		  if(i == socket_fd)
-		  {
-		    if(number_sockets < MAX_CLIENTS)//MAX_SOCKETS)
-		    {
-		      //accept new connection from client
-		      client_fd[number_sockets] = 
-		        accept(socket_fd, (struct sockaddr *)&client_addr, &client_len);
-		      if(client_fd[number_sockets] < 0)
-		      { perror("Error accepting client"); exit(1); }
-		      printf("Client accepted.\n");
-		      FD_SET(client_fd[number_sockets], &fd_master_set);
-		      number_sockets++;
+	if(i == socket_fd)
+	{
+	  if(number_sockets < MAX_CLIENTS)//MAX_SOCKETS)
+	  {
+	    //accept new connection from client
+	    client_fd[number_sockets] = 
+	      accept(socket_fd, (struct sockaddr *)&client_addr, &client_len);
+	    if(client_fd[number_sockets] < 0)
+	      { perror("Error accepting client"); exit(1); }
+	    printf("Client accepted.\n");
+	    FD_SET(client_fd[number_sockets], &fd_master_set);
+	    number_sockets++;
 
+	    client_id = client_fd[number_sockets-1];
+	    printf("i: %d, fd: %d\n",i, client_fd[number_sockets-1]);
+	    
             pthread_t reader_thread;
-  
-            if(pthread_create(&reader_thread, NULL, waitForResponse, &socket_fd)){
-              fprintf(stderr, "Error creating reader thread\n");
+	    
+            if(pthread_create(&reader_thread, NULL, waitForResponse, &socket_fd))
+	    {
+              perror("Error creating reader thread\n");
               exit(1);
             }
-		      break;
+	    printf("Started listener.\n");
+	    //break;
+	    return 1;
     	  }
-  		}
+	}
       }
     }
   }
-
   return 0;
 }
 
@@ -245,22 +347,24 @@ void physicalSend(char *buffer)
   int n; 
   int drop = (rand() % 100)+1;
   int corrupt = (rand() % 100)+1;
-  if(drop > dropRate){
-    if(corrupt <= corruptRate){
+  if(drop > dropRate)
+  {
+    if(corrupt <= corruptRate)
+    {
       shuffle(buffer, strlen(buffer));
+       printf("Corrupted packet.\n");
     }
-    printf("socket write sent\n");
     if(communicator == SERVER){
-      n = write(4, buffer, strlen(buffer));
+      n = write(client_id, buffer, strlen(buffer));
+      printf("Server ");
     } else if (communicator == CLIENT){
       n = write(server_id, buffer, strlen(buffer));
+      printf("Client ");
     }
-  } 
+     printf("socket write sent\n");
+  }
+  else
+    {
+      printf("Dropped packet.\n");
+    }
 }
-
-
-
-
-
-
-

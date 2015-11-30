@@ -190,7 +190,7 @@ int fromPhysRecv(char* buffer)
   }
   else
   {
-    printf("ERROR.  Unknown frame  type.");
+    printf("ERROR.  Unknown frame  type.\n");
   }
   
   return 0;

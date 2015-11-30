@@ -24,7 +24,8 @@ int sendCommand(char *buffer){
 
 int receiveCommand(char *buffer){
 	if(strstr(buffer, "/Hello") == buffer){
-		sendCommand(buffer);// change to say hi or something
+	  printf("Got hello.");
+	  //sendCommand(buffer);// change to say hi or something
 	} else if ( strstr(buffer, "/Sendfile") == buffer ){
 
 	} else if ( strstr(buffer, "/Getfile") == buffer ){
@@ -48,9 +49,18 @@ int main(int argc, char *argv[]){
 	initServer();
 	printf("Server has begun.");
 	char buffer[PACKET_SIZE];
+	char testbuffer[PACKET_SIZE];
+	strcpy(testbuffer, "Testdatafromserver.");
+	int n = 0;
 	while(1){
 		//check for command comming in
    		checkCommands(buffer);
+
+		int rsend = (rand() % 100)+1;
+
+		if(n == 0 && rsend > 95){
+		  //n = dataLinkSend(testbuffer, strlen(testbuffer));
+		}
 	}
 	return(1);
 
