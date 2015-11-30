@@ -46,6 +46,7 @@ int launchPacket(char* packet, int* frame, int size)
   
   if(pthread_create(&timer_thread, NULL, (void *)send_timer, frame))
     { fprintf(stderr, "Error creating timer thread\n"); return 1;}
+  return 0;
 }
 
 int statDump()
@@ -138,12 +139,14 @@ int fromPhysRecv(char* buffer)
   {
     printf("message is a message\n");
     char buffer_ack[FRAME_SIZE];
-    if(checksumCheck(buffer, sizeRcvd) != 0)
-      {
-	perror("Checksum doesn't match, packet corrupt.\n");
-	reACKnowledge(buffer_ack);
-	return ERR_CORRUPT;
-      }
+    if(checksumCheck(buffer, IDX_CRC-1) != 0)
+    {
+      perror("Checksum doesn't match, packet corrupt.\n");
+      reACKnowledge(buffer_ack);
+      return ERR_CORRUPT;
+    }
+    else
+      printf("Checksums match.\n");
     
     // in-order packet
     if(frameNumRcvd == inboundFrameCurrent+1)
@@ -211,7 +214,7 @@ int constructAck(char* buffer, int frame) //in this buffer
   sprintf(buffer+IDX_NUM, "%d", frame);
     //strcpy(buffer+IDX_NUM, itoa(frame));
   unsigned crc = crc8(0, buffer, IDX_CRC-1);
-  printf("Adding CRC of %u\n", crc);
+  //printf("Adding CRC of %u\n", crc);
   sprintf(buffer+IDX_CRC, "%d", crc);
   //buffer[IDX_CRC] = crc + '0';
   return 0;
@@ -312,7 +315,7 @@ int dataLinkSend(char *buffer, int n)
     sprintf(outboundQUEUE[outQueueCount]+IDX_NUM, "%d", outboundFrameCurrent);
       //strcpy(outboundQUEUE[outQueueCount]+IDX_NUM, itoa(outboundFrameCurrent));
     unsigned crc = crc8(0, outboundQUEUE[outQueueCount], IDX_CRC-1);
-    printf("Adding CRC of %u\n", crc);
+    //printf("Adding CRC of %u\n", crc);
     sprintf(outboundQUEUE[outQueueCount]+IDX_CRC, "%d", crc);
     //outboundQUEUE[outQueueCount][IDX_CRC] = crc + '0';
     
@@ -360,7 +363,7 @@ int checksumCheck(char* buffer, int size)
   unsigned crcRcvd = atoi(buffer + IDX_CRC);
   unsigned crcSent = crc8(0, buffer, size);
   printf("Comparing %u to %u\n", crcRcvd, crcSent);
-  return crcRcvd == crcSent;
+  return crcRcvd != crcSent;
 }
 
 static unsigned char crc8_table[] =
