@@ -43,10 +43,11 @@ void * waitForResponse(void *socket){
 	    //read server response
 	    bzero(chat_buffer, FRAME_SIZE);
 	    n = read((* socket_fd), chat_buffer, FRAME_SIZE);
-	    //printf("RECEIVED: %s\n", chat_buffer);
+	    printf("RECEIVED: %s\n", chat_buffer);
 	    if(n < 0){
 	      sleep(1); //sleep some time while waiting for a message
 	    } else {
+        printf("socket message Recieved\n");
 	    	handleMessage(chat_buffer);
 	    }
 	}
@@ -247,6 +248,7 @@ void physicalSend(char *buffer)
     if(corrupt <= corruptRate){
       shuffle(buffer, strlen(buffer));
     }
+    printf("socket write sent\n");
     if(communicator == SERVER){
       n = write(4, buffer, strlen(buffer));
     } else if (communicator == CLIENT){

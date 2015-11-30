@@ -25,6 +25,7 @@ int checkCommands(char *buffer){
 
 int sendCommand(char *buffer){
 	if(checkCommands(buffer) == 1){
+		printf("command sent.\n");
 	  dataLinkSend(buffer, strlen(buffer));
 	} else {
 		printf("not a valid command please try again.\n");
