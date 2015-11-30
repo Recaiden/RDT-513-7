@@ -42,6 +42,7 @@ void * waitForResponse(void *socket){
   	while(1){
 	    //read server response
 	    bzero(chat_buffer, FRAME_SIZE);
+      printf("%s\n", socket_fd);
 	    n = read((* socket_fd), chat_buffer, FRAME_SIZE);
 	    printf("RECEIVED: %s\n", chat_buffer);
 	    if(n < 0){
@@ -136,18 +137,18 @@ int initServer(){
 		      printf("Client accepted.\n");
 		      FD_SET(client_fd[number_sockets], &fd_master_set);
 		      number_sockets++;
+
+            pthread_t reader_thread;
+  
+            if(pthread_create(&reader_thread, NULL, waitForResponse, &socket_fd)){
+              fprintf(stderr, "Error creating reader thread\n");
+              exit(1);
+            }
 		      break;
     	  }
   		}
       }
     }
-  }
-
-  pthread_t reader_thread;
-  
-  if(pthread_create(&reader_thread, NULL, waitForResponse, &socket_fd)){
-    fprintf(stderr, "Error creating reader thread\n");
-    exit(1);
   }
 
   return 0;
