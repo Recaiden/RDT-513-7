@@ -43,7 +43,7 @@ void * waitForResponse(void *socket){
 	    //read server response
 	    bzero(chat_buffer, FRAME_SIZE);
 	    n = read((* socket_fd), chat_buffer, FRAME_SIZE);
-	    //printf("RECEIVED: %s\n", chat_buffer);
+	    printf("RECEIVED: %s\n", chat_buffer);
 	    if(n < 0){
 	      sleep(1); //sleep some time while waiting for a message
 	    } else {

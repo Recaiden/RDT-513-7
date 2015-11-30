@@ -26,7 +26,7 @@ int connected = 0;
 int outQueueCount = 0;
 int outQueueCurrent = 0;
 
-int outboundFrameCurrent = 0;
+int outboundFrameCurrent = 1;
 
 int transmissionMode = GOBACKN;
 
@@ -37,6 +37,14 @@ int statAckRcvd = 0;
 int statDupRcvd = 0;
 int statDataVolume = 0;
 int statTimeToClassifyAvg = 0;
+
+int launchPacket(char* packet, int* frame)
+{
+  pthread_t timer_thread;
+  
+  if(pthread_create(&timer_thread, NULL, (void *)send_timer, frame))
+    { fprintf(stderr, "Error creating timer thread\n"); return 1;}
+}
 
 int statDump()
 {
@@ -219,20 +227,26 @@ int send_timer(int* target)
   clock_t start = clock(), diff;
   int msec;
   int frame = *target;
-  int completed = 0;
+  int present = 0;
   int i;
   while(1)
   {
     diff = clock() - start;
     msec = diff * 1000 / CLOCKS_PER_SEC;
     //check if it's done.
+    //printf("MSEC: %d, FRAME: %d\n", msec, frame);
+    present = 0;
     for(i = 0; i < MAX_QUEUE; i++)
     {
+      //printf("%d\n", outboundNUMS[i]);
       if(outboundNUMS[i] == frame)
-      { completed = 1; }
+      { present = 1; }
     }
-    if(completed)
+    if(!present)
+    {
+      printf("frame no longer OUTBOUND.\n");
       return 0;
+    }
     if(msec > 1000)
     {
       // Timer expired, resend everything
@@ -245,11 +259,12 @@ int send_timer(int* target)
 	  int sizeRcvd = atoi(outboundQUEUE[i]+IDX_SIZE);
 	  statDataVolume += sizeRcvd;
 	  
-	  physicalSend(outboundQUEUE[i]);
+	  //physicalSend(outboundQUEUE[i]);
+	  launchPacket(outboundQUEUE[i], &frame);
 	}
       }
 
-      printf("WARNING: No ack within timeout window.\n");
+      printf("WARNING: No ack within timeout window for frame %d\n", frame);
       return 1;
     }
   }
@@ -290,17 +305,18 @@ int dataLinkSend(char *buffer, int n)
     outboundNUMS[outQueueCurrent] = outboundFrameCurrent;
     target = outboundFrameCurrent;
 
-    physicalSend(outboundQUEUE[outQueueCurrent]);
+    launchPacket(outboundQUEUE[outQueueCurrent], &target);
+    
+    /*physicalSend(outboundQUEUE[outQueueCurrent]);
+    pthread_t timer_thread;
+  
+    if(pthread_create(&timer_thread, NULL, (void *)send_timer, &target))
+    { fprintf(stderr, "Error creating timer thread\n"); return 1;}*/
 
     // Update the state of the in-flight messages.
     outQueueCount++;
     outQueueCurrent = (outQueueCurrent + 1)%MAX_QUEUE;
     outboundFrameCurrent++;
-
-    pthread_t timer_thread;
-  
-    if(pthread_create(&timer_thread, NULL, (void *)send_timer, &target))
-    { fprintf(stderr, "Error creating timer thread\n"); return 1;}
   }
   else
   {
