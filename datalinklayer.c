@@ -161,7 +161,7 @@ int fromPhysRecv(char* buffer)
       // Duplicate packet received.
       if(frameNumRcvd < inboundFrameCurrent)
       {
-	statDupRcvd;
+	statDupRcvd++;
 	reACKnowledge(buffer_ack);
       }
       // Out of window packet received somehow

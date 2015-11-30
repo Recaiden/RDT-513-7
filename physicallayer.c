@@ -160,8 +160,8 @@ Starts a thread that will check for incomming data from the server.
 */
 int initClient(){
   int socket_fd, n;
-  char packaged[FRAME_SIZE];
-  char buffer[FRAME_SIZE];
+  //char packaged[FRAME_SIZE];
+  //char buffer[FRAME_SIZE];
   
   //init socket
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);

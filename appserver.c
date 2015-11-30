@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "Please add drop and corrupt rates");
     	exit(0);
   	}
-	setRates(argv[1], argv[2]);
+	setRates(atoi(argv[1]), atoi(argv[2]));
 
 	//begin cleint
 	initServer();
