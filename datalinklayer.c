@@ -29,6 +29,7 @@ int outQueueCurrent = 0; // where the next packet is going in
 
 int outboundFrameCurrent = 1;
 
+//int transmissionMode = SELECTIVE_REPEAT;
 int transmissionMode = GOBACKN;
 
 int statDataSent = 0;
@@ -56,7 +57,7 @@ int statDump()
   printf("Number of retransmissions: %d\n", statReSent);
   printf("Number of ACKs sent: %d\n", statAckSent);
   printf("Number of ACKs received: %d\n", statAckRcvd);
-  printf("Number of dupliate packets: %d\n", statDupRcvd);
+  printf("Number of duplicate packets: %d\n", statDupRcvd);
   printf("Volume of data sent in packets: %d\n", statDataVolume);
   return 0;
 }
@@ -80,6 +81,7 @@ int dataLinkRecv(char* buffer)
 	  strcpy(upboundQUEUE[upQCurrent], inboundQUEUE[i]+IDX_MESSAGE);
 	  inboundFrameCurrent += 1;
 	  upQCurrent = (upQCurrent + 1)%MAX_QUEUE;
+	  printf("upQCurr = %d\n", upQCurrent);
 	  upQSend ++;
 	  break;
 	}
@@ -90,6 +92,8 @@ int dataLinkRecv(char* buffer)
   // Copy data from the queue into the buffer.
   strcpy(buffer, upboundQUEUE[upQDeque]);
   upQDeque = (upQDeque + 1)%MAX_QUEUE;
+  printf("upQDeck = %d\n", upQDeque);
+  
   //  Mark that this message has been delivered
   upQSend--;
   return 0;
@@ -104,16 +108,23 @@ int fromPhysHandleAck(char* buffer, int frameNumRcvd)
   for(i = 0; i < MAX_QUEUE; i++)
   {
     if(outboundNUMS[i] == frameNumRcvd)
-    { idx_q = i; }
-    if(outboundNUMS[i] <= frameNumRcvd)
-    { outboundNUMS[i] = 0; }
+    {
+      idx_q = i;
+      outboundNUMS[i] = 0;
+      outQueueCount--;
+    }
+    if(transmissionMode == GOBACKN && outboundNUMS[i] < frameNumRcvd)
+    {
+      outboundNUMS[i] = 0;
+      outQueueCount--;
+    }
   }
   // Received ACK for a packet we never sent
   if(idx_q == -1)
   {
     printf("ERROR.  Received ACK for unknown packet.\n");
   }
-  outQueueCount--;
+  
   // stop retransmission timer. handled in send_timer by outboundNUMS having been set
   if(outQueueCount == 0){ }
   // Reset retransmission timer. handled in send_timer by there being a separate timer
@@ -129,8 +140,10 @@ int fromPhysRecv(char* buffer)
   //int sizeRcvd = atoi(buffer+IDX_SIZE);
 
   // If the application isn't reading, don't keep reading.
+  printf("UPSEND: %d\n", upQSend);
   while(upQSend == MAX_QUEUE)//upQCurrent -1)
   {
+    printf("UPSEND: %d\n", upQSend);
     //do nothing
   }
      
@@ -163,8 +176,11 @@ int fromPhysRecv(char* buffer)
 
       // Store the packet for the app-layer to retrieve
       //printf("STORING MESSAGE: %s \n", buffer+IDX_MESSAGE);
+      memset(upboundQUEUE[upQCurrent], 0, MESSAGE_SIZE);//todo unsure
+      
       strcpy(upboundQUEUE[upQCurrent], buffer+IDX_MESSAGE);
       upQCurrent = (upQCurrent + 1)%MAX_QUEUE;
+      printf("upQCurr = %d\n", upQCurrent);
       upQSend ++;
       return 0;
     }
@@ -175,7 +191,9 @@ int fromPhysRecv(char* buffer)
       constructAck(buffer_ack, frameNumRcvd);
       physicalSend(buffer_ack, IDX_END);
       // Put it in the queue, getting them out in order is DataLinkRecv's problem
-      strcpy(inboundQUEUE[inboundQMarker], buffer);
+      memset(inboundQUEUE[inboundQMarker], 0, IDX_END);
+      memcpy(inboundQUEUE[inboundQMarker], buffer, FRAME_SIZE);
+      //strcpy(inboundQUEUE[inboundQMarker], buffer);
       inboundQMarker = (inboundQMarker + 1) % MAX_QUEUE;
     }
     else //GBN
@@ -183,6 +201,7 @@ int fromPhysRecv(char* buffer)
       // Duplicate packet received.
       if(frameNumRcvd < inboundFrameCurrent)
       {
+	printf("Wrong packet\n");
 	statDupRcvd++;
 	reACKnowledge(buffer_ack);
       }
@@ -194,6 +213,7 @@ int fromPhysRecv(char* buffer)
       }
       else
       {
+	printf("reacking?\n");
 	reACKnowledge(buffer_ack);
       }
     }
@@ -315,6 +335,7 @@ int dataLinkSend(char *buffer, int n)
     
     // Write the message into the Outgoing Q
     memset(outboundQUEUE[outQueueCurrent], 0, IDX_END);
+    
     sprintf(outboundQUEUE[outQueueCurrent]+IDX_SIZE, "%d", n);
     sprintf(outboundQUEUE[outQueueCurrent]+IDX_TYPE, "%d", TYPE_MESSAGE);
     strncpy(outboundQUEUE[outQueueCurrent]+IDX_MESSAGE, buffer, n);
@@ -350,6 +371,7 @@ int dataLinkSend(char *buffer, int n)
     // Update the state of the in-flight messages.
     outQueueCount++;
     outQueueCurrent = (outQueueCurrent + 1)%MAX_QUEUE;
+    printf("OUTQUEUEC is now %d \n", outQueueCurrent);
     outboundFrameCurrent++;
   }
   else
@@ -428,31 +450,5 @@ unsigned crc8(unsigned crc, char* buffer, size_t len)
     }
   return 0;
 }*/
-
-/*
-//receiving thread
-// while the upbound buffer isn't full, call fromPhysRecv
-void *read_frames()
-{
-  int n;
-  char chat_buffer[FRAME_SIZE];
-  while(1)
-  {
-    // If the application isn't reading, don't keep reading.
-    if(upQSend == upQCurrent -1)
-      continue;
-    // read server response
-    memset(chat_buffer, 0, FRAME_SIZE);
-    physicalRecv(chat_buffer);
-    n = fromPhysRecv(chat_buffer);
-    if(n < 0)
-    { sleep(1); } //sleep some time while waiting for a message
-
-    else
-    {
-      //TODO maybe something
-    }
-  }		
-  }*/
 
 // 8-bit CRC with polynomial x^8+x^6+x^3+x^2+1, 0x14D.
