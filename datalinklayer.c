@@ -223,7 +223,7 @@ int constructAck(char* buffer, int frame) //in this buffer
 
 int reACKnowledge(char* buffer)
 {
-  constructAck(buffer, outboundFrameCurrent);
+  constructAck(buffer, inboundFrameCurrent);
   physicalSend(buffer, IDX_END);
   return 0;
 }

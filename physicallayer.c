@@ -234,16 +234,20 @@ int initClient(){
 /**
 shuffle: This function takes in an array and jumbles up its data randomly
 */
-void shuffle(int *array, size_t n){
-    if (n > 1) {
-        size_t i;
-        for (i = 0; i < n - 1; i++) {
-          size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
-          int t = array[j];
-          array[j] = array[i];
-          array[i] = t;
-        }
+void shuffle(int *array, size_t n)
+{
+  if (n > 1)
+  {
+    size_t i;
+    for (i = 0; i < n - 1; i++)
+    {
+      //size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+      size_t j = i + rand() % n;
+      int t = array[j];
+      array[j] = array[i];
+      array[i] = t;
     }
+  }
 }
 
 /**
@@ -261,7 +265,7 @@ void physicalSend(char *buffer, int size)
   {
     if(corrupt <= corruptRate)
     {
-      shuffle((int*)buffer, strlen(buffer));
+      shuffle((int*)buffer, FRAME_SIZE);
       printf("Corrupted packet.\n");
     }
     /*printf("SIZE   : %s\n", buffer+IDX_SIZE);
