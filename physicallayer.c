@@ -118,6 +118,12 @@ int initServer()
   self.sin_family = AF_INET;
   self.sin_port = htons(PORT);
   self.sin_addr.s_addr = INADDR_ANY;
+
+  int yes = 1;
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) { 
+      perror("setsockopt"); 
+      exit(1); 
+    }  
   
   if ( bind(sockfd, (struct sockaddr*)&self, sizeof(self)) != 0 )
   {
