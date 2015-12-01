@@ -17,6 +17,7 @@ int inboundQMarker = 0;
 int inboundFrameCurrent = 0;
 
 char upboundQUEUE [MAX_QUEUE][MESSAGE_SIZE]; // Holds MESSAGES that have been acked but the APP layer doesn't want yet.
+int upboundLENS [MAX_QUEUE];
 int upQCurrent = 0; // Marks the next open space to enqueue a message
 int upQDeque = 0; // MArks where the app layer will take from.
 int upQSend = 0; // How many packets are in upboundQ
@@ -78,7 +79,9 @@ int dataLinkRecv(char* buffer)
       {
 	if(atoi(inboundQUEUE[i]+IDX_NUM) == inboundFrameCurrent+1)
 	{
-	  strcpy(upboundQUEUE[upQCurrent], inboundQUEUE[i]+IDX_MESSAGE);
+	  int sizeStored = atoi(buffer+IDX_SIZE);
+	  upboundLENS[upQCurrent] = sizeStored;
+	  memcpy(upboundQUEUE[upQCurrent], inboundQUEUE[i]+IDX_MESSAGE, sizeStored);
 	  inboundFrameCurrent += 1;
 	  upQCurrent = (upQCurrent + 1)%MAX_QUEUE;
 	  printf("upQCurr = %d\n", upQCurrent);
@@ -90,13 +93,15 @@ int dataLinkRecv(char* buffer)
   }
   printf("Data: %s \n", upboundQUEUE[upQDeque]);
   // Copy data from the queue into the buffer.
-  strcpy(buffer, upboundQUEUE[upQDeque]);
+  int sizeOfMsg = upboundLENS[upQDeque];
+  memcpy(buffer, upboundQUEUE[upQDeque], sizeOfMsg);
+
   upQDeque = (upQDeque + 1)%MAX_QUEUE;
   printf("upQDeck = %d\n", upQDeque);
   
   //  Mark that this message has been delivered
   upQSend--;
-  return 0;
+  return sizeOfMsg;
 }
 
 int fromPhysHandleAck(char* buffer, int frameNumRcvd)
@@ -137,7 +142,7 @@ int fromPhysRecv(char* buffer)
   //int type = (int)buffer[IDX_TYPE] - '0';
   int type = atoi(buffer+IDX_TYPE);
   int frameNumRcvd = atoi(buffer+IDX_NUM);
-  //int sizeRcvd = atoi(buffer+IDX_SIZE);
+  int sizeRcvd = atoi(buffer+IDX_SIZE);
 
   // If the application isn't reading, don't keep reading.
   printf("UPSEND: %d\n", upQSend);
@@ -176,9 +181,9 @@ int fromPhysRecv(char* buffer)
 
       // Store the packet for the app-layer to retrieve
       //printf("STORING MESSAGE: %s \n", buffer+IDX_MESSAGE);
-      memset(upboundQUEUE[upQCurrent], 0, MESSAGE_SIZE);//todo unsure
-      
-      strcpy(upboundQUEUE[upQCurrent], buffer+IDX_MESSAGE);
+      memset(upboundQUEUE[upQCurrent], 0, MESSAGE_SIZE); //todo unsure
+      memcpy(upboundQUEUE[upQCurrent], buffer+IDX_MESSAGE, sizeRcvd);
+      upboundLENS[upQCurrent] = sizeRcvd;
       upQCurrent = (upQCurrent + 1)%MAX_QUEUE;
       printf("upQCurr = %d\n", upQCurrent);
       upQSend ++;
