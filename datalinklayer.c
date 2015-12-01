@@ -24,8 +24,8 @@ int upQSend = 0; // How many packets are in upboundQ
 char outboundQUEUE [MAX_QUEUE][FRAME_SIZE];
 int outboundNUMS [MAX_QUEUE];
 int connected = 0;
-int outQueueCount = 0;
-int outQueueCurrent = 0;
+int outQueueCount = 0; // How many are in flight
+int outQueueCurrent = 0; // where the next packet is going in
 
 int outboundFrameCurrent = 1;
 
@@ -41,7 +41,7 @@ int statTimeToClassifyAvg = 0;
 
 int launchPacket(char* packet, int* frame, int size)
 {
-  printf("Send frame to physical\n");
+  //printf("Send frame to physical\n");
   physicalSend(packet, size);
   pthread_t timer_thread;
   
@@ -314,19 +314,19 @@ int dataLinkSend(char *buffer, int n)
     statDataVolume += n;
     
     // Write the message into the Outgoing Q
-    memset(outboundQUEUE[outQueueCount], 0, IDX_END);
-    sprintf(outboundQUEUE[outQueueCount]+IDX_SIZE, "%d", n);
-    sprintf(outboundQUEUE[outQueueCount]+IDX_TYPE, "%d", TYPE_MESSAGE);
-    strncpy(outboundQUEUE[outQueueCount]+IDX_MESSAGE, buffer, n);
-    sprintf(outboundQUEUE[outQueueCount]+IDX_NUM, "%d", outboundFrameCurrent);
-    unsigned crc = crc8(0, outboundQUEUE[outQueueCount], IDX_CRC-1);
+    memset(outboundQUEUE[outQueueCurrent], 0, IDX_END);
+    sprintf(outboundQUEUE[outQueueCurrent]+IDX_SIZE, "%d", n);
+    sprintf(outboundQUEUE[outQueueCurrent]+IDX_TYPE, "%d", TYPE_MESSAGE);
+    strncpy(outboundQUEUE[outQueueCurrent]+IDX_MESSAGE, buffer, n);
+    sprintf(outboundQUEUE[outQueueCurrent]+IDX_NUM, "%d", outboundFrameCurrent);
+    unsigned crc = crc8(0, outboundQUEUE[outQueueCurrent], IDX_CRC-1);
     //printf("Adding CRC of %u\n", crc);
-    sprintf(outboundQUEUE[outQueueCount]+IDX_CRC, "%d", crc);
+    sprintf(outboundQUEUE[outQueueCurrent]+IDX_CRC, "%d", crc);
     
     outboundNUMS[outQueueCurrent] = outboundFrameCurrent;
     target = outboundFrameCurrent;
 
-    printf("%s %s %s %s %s\n",
+    printf("SENDING: %s %s %s %s %s\n",
 	   outboundQUEUE[outQueueCurrent]+IDX_SIZE,
 	   outboundQUEUE[outQueueCurrent]+IDX_NUM,
 	   outboundQUEUE[outQueueCurrent]+IDX_TYPE,

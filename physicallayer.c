@@ -42,32 +42,6 @@ void * waitForResponse(void *socket)
 {
   printf("Waiting for response.\n");
   int n;
-  int * socket_fd = (int *)socket;
-  char chat_buffer[FRAME_SIZE];
-  while(1)
-  {
-    //read server response
-    //bzero(chat_buffer, FRAME_SIZE);
-    memset(chat_buffer, 0, FRAME_SIZE);
-
-    n = read((* socket_fd), chat_buffer, FRAME_SIZE);
-    printf("RECEIVED: %d %s\n", *socket_fd, chat_buffer);
-    if(n < 0)
-    {
-      sleep(1); //sleep some time while waiting for a message
-    }
-    else
-    {
-      printf("n: %d, socket message Recieved\n", n);
-      handleMessage(chat_buffer);
-    }
-  }
-}
-
-void * waitForResponseServer(void *socket)
-{
-  printf("Waiting for response.\n");
-  int n;
   //int * socket_fd = (int *)socket;
   int socket_fd = *(int*)socket;
   char buffer[FRAME_SIZE];
@@ -78,10 +52,15 @@ void * waitForResponseServer(void *socket)
     memset(buffer, 0, FRAME_SIZE);
 
     n = read((socket_fd), buffer, FRAME_SIZE);
-    printf("RECEIVED from %d \n", socket_fd);
+    printf("RECEIVED %d from %d \n", n, socket_fd);
     if(n < 0)
     {
       sleep(1); //sleep some time while waiting for a message
+    }
+    else if (n == 0)
+    {
+      printf("Remote has disconnected.  Closing.");
+      exit(0);
     }
     else
     {
@@ -154,7 +133,7 @@ int initServer()
 
     client_id = clientfd;
 	    
-    if(pthread_create(&reader_thread, NULL, waitForResponseServer, &clientfd))
+    if(pthread_create(&reader_thread, NULL, waitForResponse, &clientfd))
       {
 	perror("Error creating reader thread\n");
 	exit(1);
@@ -227,7 +206,7 @@ int initClient(){
   
   pthread_t reader_thread;
   
-  if(pthread_create(&reader_thread, NULL, waitForResponseServer, &server_id)){
+  if(pthread_create(&reader_thread, NULL, waitForResponse, &server_id)){
     fprintf(stderr, "Error creating reader thread\n");
     exit(1);
   }
