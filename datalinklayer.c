@@ -162,7 +162,7 @@ int fromPhysRecv(char* buffer)
       physicalSend(buffer_ack, IDX_END);
 
       // Store the packet for the app-layer to retrieve
-      printf("STORING MESSAGE: %s \n", buffer+IDX_MESSAGE);
+      //printf("STORING MESSAGE: %s \n", buffer+IDX_MESSAGE);
       strcpy(upboundQUEUE[upQCurrent], buffer+IDX_MESSAGE);
       upQCurrent = (upQCurrent + 1)%MAX_QUEUE;
       upQSend ++;
@@ -172,8 +172,8 @@ int fromPhysRecv(char* buffer)
     if(transmissionMode == SELECTIVE_REPEAT)
     {
       // Ack that packet, whatever it was.
-      constructAck(buffer, frameNumRcvd);
-      physicalSend(buffer, IDX_END);
+      constructAck(buffer_ack, frameNumRcvd);
+      physicalSend(buffer_ack, IDX_END);
       // Put it in the queue, getting them out in order is DataLinkRecv's problem
       strcpy(inboundQUEUE[inboundQMarker], buffer);
       inboundQMarker = (inboundQMarker + 1) % MAX_QUEUE;
