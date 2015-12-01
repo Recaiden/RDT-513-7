@@ -7,16 +7,17 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <time.h>
 #include "physicallayer.h"
 #include "linkfunctions.h"
 
 #define PACKET_SIZE 100
 #define SIZE_FILE_MAX 104857600
 
-struct timespec ts;
+struct timespec tstart={0,0}, tend={0,0};
 int receivingFile = 0;
 FILE *file;
-
+struct timespec ts;
 int transfer_file(int socket_fd, char* filename)
 {
   char packaged[PACKET_SIZE];
@@ -111,7 +112,18 @@ int main(int argc, char *argv[]){
 		bzero(buffer, PACKET_SIZE);
    		fgets(buffer, PACKET_SIZE, stdin);
    		if(checkCommands(buffer)){
+   			
+   			clock_gettime(CLOCK_MONOTONIC, &tstart);
    			sendCommand(buffer);
+   			printf("send command\n");
+   			dataLinkRecv(buffer);
+   			printf("received\n");
+   		 	clock_gettime(CLOCK_MONOTONIC, &tend);
+
+    		printf("Round trip in: %.5f seconds\n",
+           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+           ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+
    		} else {
    			printf("This command does not exist please try again.\n"); // maybe put in a help command
 					statDump();

@@ -8,7 +8,7 @@ server: server.o link.o physical.o
 	$(CC) $(LDFLAGS) appserver.o datalinklayer.o physicallayer.o -o appserver.exe
 
 client: client.o link.o physical.o
-	$(CC) $(LDFLAGS) appclient.o datalinklayer.o physicallayer.o -o appclient.exe
+	$(CC) $(LDFLAGS) appclient.o datalinklayer.o physicallayer.o -o appclient.exe -lrt
 
 link.o: datalinklayer.c linkfunctions.h physicallayer.h
 	$(CC) $(CFLAGS) datalinklayer.c
