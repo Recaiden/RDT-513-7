@@ -28,23 +28,8 @@ the other, or packets will fail to be properly acknowledged.
 
 
 Client speific commands:
-1. /FILE filepath - This call will take the specific file defined in the filepath and will send it to the partner client that is chatting with the user. When receiveing a file, the file will be created in the directory in which the client program is located.
-
-2. /FLAG - This call will alert the server that a user wants to flag their partner which will be stored on the server and viewable by the admin of the server when using the /STATS command.
-
-3. /QUIT - This call will end the communication of a client who is chatting with another client. Both clients will be alerted that they were disconnected.
-
-4. /HELP - This call will give the user tips on what commands can be typed in that the server will know what to do with.
-
-Server specific commands:
-1. /STATS - This call gives the server admin a detailed printout about the current server queue, the 
-
-2. /BLOCK fd - blocks the user of the fd given this will not allow them to connect to chat.
-
-3. /UNBLOCK fd - unblocks the user of the fd given if they were originally block allowing them to now connect to chat.
-
-4. /THROW fd - throws out a client from a chat and disconnects their partner from the chat as well.
-
-5. /START - starts up the server to allow clients to connect
-
-6. /END - ends the server and disconnects all users gracefully.
+1. /Hello sends to the server looking for a greeting response back
+2. /Sendfile sends the file small.txt to the server
+3. /Getfile gets the file small.txt from the server
+4. /Status just gives the status which is just a message
+5. /Goodbye sends a goodbye message back from the server
