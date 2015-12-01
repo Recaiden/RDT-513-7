@@ -11,6 +11,68 @@
 #include "linkfunctions.h"
 
 #define PACKET_SIZE 100
+#define SIZE_FILE_MAX 104857600
+
+struct timespec ts;
+int receivingFile = 0;
+FILE *file;
+
+int transfer_file(int socket_fd, char* filename)
+{
+  char packaged[PACKET_SIZE];
+  char buffer[PACKET_SIZE-5];
+  
+  FILE *fp;
+  fp = fopen(filename, "rb"); 
+  if(fp == NULL)
+  { perror("Error opening file"); return 1; }
+  
+  while(1)
+  {
+    bzero(packaged, PACKET_SIZE);
+    bzero(buffer, PACKET_SIZE-5);
+    
+    int nread = fread(buffer, 1, PACKET_SIZE-5, fp);
+
+    if(nread > 0)
+    {
+      //printf("BUFFERING:%s\n", buffer);
+      //sprintf(packaged, "%04d%s", friend_fd, buffer);
+
+      //printf("SENDING: %s\n", buffer);
+      write(socket_fd, buffer, strlen(buffer));
+      nanosleep(&ts, NULL);
+    }    
+    if (nread < PACKET_SIZE-5)
+    {
+      if (feof(fp))
+      {
+      bzero(packaged, PACKET_SIZE);
+      bzero(buffer, PACKET_SIZE-5);
+      //sprintf(packaged, "%04d", friend_fd);
+      sprintf(buffer, "/ENDF");
+      strcat(packaged, buffer);
+      write(socket_fd, packaged, strlen(packaged));
+      nanosleep(&ts, NULL);
+      printf("End of file\n");
+      return 0;
+      }
+      if (ferror(fp))
+      {
+	perror("Error reading\n");
+	// TODO better handling. Should send special message?
+	return 1;
+      }
+      else
+      {
+	perror("Unknown error.");
+	return 2;
+      }
+      printf("File transferred.");
+      break;
+    }
+  }
+}
 
 int checkCommands(char *buffer){
 	if(strstr(buffer, "/Hello") == buffer ||
