@@ -17,7 +17,6 @@ void checkCommands(char *buffer){
   //maybe for changing physical layer probabilities
   //printf("Getting data from link layer\n");
 	dataLinkRecv(buffer);
-
 	receiveCommand(buffer);
 }
 
@@ -28,16 +27,18 @@ int sendCommand(char *buffer){
 
 int receiveCommand(char *buffer){
 	if(strstr(buffer, "/Hello") == buffer){
-	  printf("Got hello.\n");
-	  sendCommand(buffer);// change to say hi or something
+		strcpy(buffer, "Hi How are you?");
+	    sendCommand(buffer);
 	} else if ( strstr(buffer, "/Sendfile") == buffer ){
 
 	} else if ( strstr(buffer, "/Getfile") == buffer ){
 
 	} else if ( strstr(buffer, "/Status") == buffer ){
-
+		strcpy(buffer, "Current Status:");
+		sendCommand(buffer);
 	} else if ( strstr(buffer, "/Goodbye") == buffer){
-		
+		strcpy(buffer, "See You Later!");
+		sendCommand(buffer);
 	}
 	return(1);
 }
