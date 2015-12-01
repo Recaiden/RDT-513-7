@@ -38,6 +38,7 @@ int receiveCommand(char *buffer){
 	} else if ( strstr(buffer, "/Getfile") == buffer ){
 
 	} else if ( strstr(buffer, "/Status") == buffer ){
+	  statDump();
 		strcpy(buffer, "Current Status:");
 		sendCommand(buffer);
 	} else if ( strstr(buffer, "/Goodbye") == buffer){
