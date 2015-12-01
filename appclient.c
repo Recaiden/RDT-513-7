@@ -18,6 +18,9 @@ struct timespec tstart={0,0}, tend={0,0};
 int receivingFile = 0;
 FILE *file;
 struct timespec ts;
+int transferingFile = 0;
+
+
 int transfer_file(char* filename) {
 
   char buffer[PACKET_SIZE];
@@ -37,9 +40,9 @@ int transfer_file(char* filename) {
     {
       //printf("BUFFERING:%s\n", buffer);
       //sprintf(packaged, "%04d%s", friend_fd, buffer);
-
       //printf("SENDING: %s\n", buffer);
       sendCommand(buffer);
+      dataLinkRecv(buffer);
       //write(socket_fd, buffer, strlen(buffer));
       nanosleep(&ts, NULL);
     }    
@@ -87,7 +90,9 @@ int checkCommands(char *buffer){
 int sendCommand(char *buffer){
 	if(checkCommands(buffer) == 1){
 		printf("command sent.\n");
-	  dataLinkSend(buffer, strlen(buffer));
+	  	dataLinkSend(buffer, strlen(buffer));
+	} else if(transferingFile == 1){
+		dataLinkSend(buffer, strlen(buffer));
 	} else {
 		printf("not a valid command please try again.\n");
 	}
@@ -111,7 +116,28 @@ int main(int argc, char *argv[]){
    		fgets(buffer, PACKET_SIZE, stdin);
    		if(strstr(buffer, "/Sendfile") == buffer){
    			sendCommand(buffer);
+   			dataLinkRecv(buffer);
+   			transferingFile = 1;
    			transfer_file("./small.txt");
+   		} else if (strstr(buffer, "/Getfile") == buffer){
+   			sendCommand(buffer);
+   			dataLinkRecv(buffer);
+   			if((buffer, "Sending file") == buffer){
+   			strcpy(buffer, "send more of file");
+			sendCommand(buffer);
+			FILE *newFile;
+			newFile = fopen("evensmaller.txt", "w+b"); 
+				while(1){
+					int size = dataLinkRecv(buffer);
+					if((buffer, "/ENDF") == buffer) {
+						fclose(newFile);
+						break;
+					}
+					fwrite(buffer, 1, size, newFile);
+					strcpy(buffer, "send more of file");
+					sendCommand(buffer);
+				}
+			}
    		} else if(checkCommands(buffer)){
    			
    			clock_gettime(CLOCK_MONOTONIC, &tstart);

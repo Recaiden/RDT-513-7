@@ -19,8 +19,8 @@ FILE *file;
 void checkCommands(char *buffer){
   //maybe for changing physical layer probabilities
   //printf("Getting data from link layer\n");
-	dataLinkRecv(buffer);
-	receiveCommand(buffer);
+	int size = dataLinkRecv(buffer);
+	receiveCommand(buffer, size);
 }
 
 int sendCommand(char *buffer){
@@ -28,14 +28,40 @@ int sendCommand(char *buffer){
   return(1);
 }
 
-int receiveCommand(char *buffer){
+int receiveCommand(char *buffer, int size){
 	if(strstr(buffer, "/Hello") == buffer){
 		strcpy(buffer, "Hi How are you?");
 	    sendCommand(buffer);
 	} else if ( strstr(buffer, "/Sendfile") == buffer ){
 		recievingFile = 1;
-
+		file = fopen("smaller.txt", "w+b"); 
+		strcpy(buffer, "send more of file");
+		sendCommand(buffer);
 	} else if ( strstr(buffer, "/Getfile") == buffer ){
+		 
+		 strcpy(buffer, "Sending file");
+		sendCommand(buffer);
+		//dataLinkRecv(buffer);
+		 FILE *fp;
+  		 fp = fopen("small.txt", "rb");
+  		 while(1){
+	  		 bzero(buffer, PACKET_SIZE);
+	    	 int nread = fread(buffer, 1, PACKET_SIZE, fp);
+	    	 if(nread > 0){
+	      		sendCommand(buffer);
+	      		dataLinkRecv(buffer);
+	   		} 
+	   		if (nread < PACKET_SIZE) {
+	      		if (feof(fp)) {
+			     
+			      bzero(buffer, PACKET_SIZE);
+			      sprintf(buffer, "/ENDF");
+			      sendCommand(buffer);
+			      printf("End of file\n");
+			      break;
+			  }
+			}
+		}
 
 	} else if ( strstr(buffer, "/Status") == buffer ){
 	  statDump();
@@ -44,11 +70,16 @@ int receiveCommand(char *buffer){
 	} else if ( strstr(buffer, "/Goodbye") == buffer){
 		strcpy(buffer, "See You Later!");
 		sendCommand(buffer);
-	} else if(strstr(buffer, "/Endl") == buffer){
+	} else if(strstr(buffer, "/ENDF") == buffer){
 		recievingFile = 0;
+		printf("Closed\n");
 		fclose(file);
 	} else if(recievingFile == 1){
-		fwrite(buffer, 1, n, file);
+		printf("before writing to file %d\n", size);
+		fwrite(buffer, 1, size, file);
+		printf("after writing to file\n");
+		strcpy(buffer, "send more of file");
+		sendCommand(buffer);
 	}
 	return(1);
 }
