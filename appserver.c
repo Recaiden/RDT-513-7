@@ -13,6 +13,9 @@
 
 #define PACKET_SIZE 100
 
+int recievingFile = 0;
+FILE *file;
+
 void checkCommands(char *buffer){
   //maybe for changing physical layer probabilities
   //printf("Getting data from link layer\n");
@@ -30,6 +33,7 @@ int receiveCommand(char *buffer){
 		strcpy(buffer, "Hi How are you?");
 	    sendCommand(buffer);
 	} else if ( strstr(buffer, "/Sendfile") == buffer ){
+		recievingFile = 1;
 
 	} else if ( strstr(buffer, "/Getfile") == buffer ){
 
@@ -40,6 +44,11 @@ int receiveCommand(char *buffer){
 	} else if ( strstr(buffer, "/Goodbye") == buffer){
 		strcpy(buffer, "See You Later!");
 		sendCommand(buffer);
+	} else if(strstr(buffer, "/Endl") == buffer){
+		recievingFile = 0;
+		fclose(file);
+	} else if(recievingFile == 1){
+		fwrite(buffer, 1, n, file);
 	}
 	return(1);
 }

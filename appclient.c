@@ -18,10 +18,9 @@ struct timespec tstart={0,0}, tend={0,0};
 int receivingFile = 0;
 FILE *file;
 struct timespec ts;
-int transfer_file(int socket_fd, char* filename)
-{
-  char packaged[PACKET_SIZE];
-  char buffer[PACKET_SIZE-5];
+int transfer_file(char* filename) {
+
+  char buffer[PACKET_SIZE];
   
   FILE *fp;
   fp = fopen(filename, "rb"); 
@@ -30,10 +29,9 @@ int transfer_file(int socket_fd, char* filename)
   
   while(1)
   {
-    bzero(packaged, PACKET_SIZE);
-    bzero(buffer, PACKET_SIZE-5);
+    bzero(buffer, PACKET_SIZE);
     
-    int nread = fread(buffer, 1, PACKET_SIZE-5, fp);
+    int nread = fread(buffer, 1, PACKET_SIZE, fp);
 
     if(nread > 0)
     {
@@ -41,19 +39,19 @@ int transfer_file(int socket_fd, char* filename)
       //sprintf(packaged, "%04d%s", friend_fd, buffer);
 
       //printf("SENDING: %s\n", buffer);
-      write(socket_fd, buffer, strlen(buffer));
+      sendCommand(buffer);
+      //write(socket_fd, buffer, strlen(buffer));
       nanosleep(&ts, NULL);
     }    
-    if (nread < PACKET_SIZE-5)
+    if (nread < PACKET_SIZE)
     {
       if (feof(fp))
       {
-      bzero(packaged, PACKET_SIZE);
-      bzero(buffer, PACKET_SIZE-5);
+     
+      bzero(buffer, PACKET_SIZE);
       //sprintf(packaged, "%04d", friend_fd);
       sprintf(buffer, "/ENDF");
-      strcat(packaged, buffer);
-      write(socket_fd, packaged, strlen(packaged));
+      sendCommand(buffer);
       nanosleep(&ts, NULL);
       printf("End of file\n");
       return 0;
@@ -111,7 +109,10 @@ int main(int argc, char *argv[]){
 	while(1){
 		bzero(buffer, PACKET_SIZE);
    		fgets(buffer, PACKET_SIZE, stdin);
-   		if(checkCommands(buffer)){
+   		if(strstr(buffer, "/Sendfile") == buffer){
+   			sendCommand(buffer);
+   			transfer_file("./small.txt");
+   		} else if(checkCommands(buffer)){
    			
    			clock_gettime(CLOCK_MONOTONIC, &tstart);
    			sendCommand(buffer);
