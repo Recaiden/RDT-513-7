@@ -15,7 +15,9 @@
 
 void checkCommands(char *buffer){
   //maybe for changing physical layer probabilities
+  //printf("Getting data from link layer\n");
 	dataLinkRecv(buffer);
+
 	receiveCommand(buffer);
 }
 

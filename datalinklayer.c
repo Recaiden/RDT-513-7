@@ -18,6 +18,7 @@ int inboundFrameCurrent = 0;
 
 char upboundQUEUE [MAX_QUEUE][MESSAGE_SIZE]; // Holds MESSAGES that have been acked but the APP layer doesn't want yet.
 int upQCurrent = 0; // Marks the next open space to enqueue a message
+int upQDeque = 0; // MArks where the app layer will take from.
 int upQSend = 0; // How many packets are in upboundQ
 
 char outboundQUEUE [MAX_QUEUE][FRAME_SIZE];
@@ -62,6 +63,7 @@ int statDump()
 
 int dataLinkRecv(char* buffer)
 {
+  printf("In data link recv.\n");
   int i;
   //inQueueCurrent = (inQueueCurrent + 1)%MAX_QUEUE;
   while(upQSend == 0)
@@ -84,8 +86,10 @@ int dataLinkRecv(char* buffer)
       }
     }
   }
+  printf("Data: %s \n", upboundQUEUE[upQDeque]);
   // Copy data from the queue into the buffer.
-  strcpy(buffer, upboundQUEUE[upQSend]);
+  strcpy(buffer, upboundQUEUE[upQDeque]);
+  upQDeque = (upQDeque + 1)%MAX_QUEUE;
   //  Mark that this message has been delivered
   upQSend--;
   return 0;
@@ -125,7 +129,7 @@ int fromPhysRecv(char* buffer)
   //int sizeRcvd = atoi(buffer+IDX_SIZE);
 
   // If the application isn't reading, don't keep reading.
-  while(upQSend == upQCurrent -1)
+  while(upQSend == MAX_QUEUE)//upQCurrent -1)
   {
     //do nothing
   }
@@ -154,10 +158,11 @@ int fromPhysRecv(char* buffer)
     {
       inboundFrameCurrent = frameNumRcvd;
       // ACK!
-      constructAck(buffer, inboundFrameCurrent);
-      physicalSend(buffer, IDX_END);
+      constructAck(buffer_ack, inboundFrameCurrent);
+      physicalSend(buffer_ack, IDX_END);
 
       // Store the packet for the app-layer to retrieve
+      printf("STORING MESSAGE: %s \n", buffer+IDX_MESSAGE);
       strcpy(upboundQUEUE[upQCurrent], buffer+IDX_MESSAGE);
       upQCurrent = (upQCurrent + 1)%MAX_QUEUE;
       upQSend ++;
